@@ -19,7 +19,9 @@ final class Renderer {
 
   private let inflightSemaphore: dispatch_semaphore_t
 
-  init(device: MTLDevice) {
+  private let uniformBuffer: Buffer
+
+  init(device: MTLDevice, projection: Mat4) {
     //not sure where to set this up or if I even want to do it this way
     Fonts.cache.device = device
     //-----------------------------------------------------------------
@@ -28,8 +30,15 @@ final class Renderer {
     commandQueue.label = "main command queue"
 
     //descriptorQueue = RenderPassQueue(view: view)
-    
-    let factory = PipelineFactory(device: device)
+
+    uniformBuffer = Buffer(length: sizeof(Uniforms))
+    var projection = projection
+    uniformBuffer.update(&projection, size: sizeof(Mat4))
+    let indexBuffer = Buffer(length: Quad.indicesSize)
+    var indicesData = Quad.indicesData
+    indexBuffer.update(&indicesData, size: Quad.indicesSize)
+
+    let factory = PipelineFactory(device: device, indexBuffer: indexBuffer, uniformBuffer: uniformBuffer)
     shapePipeline = factory.constructShapePipeline()
     spritePipeline = factory.constructSpritePipeline()
     textPipeline = factory.constructTextPipeline()
@@ -38,8 +47,13 @@ final class Renderer {
     inflightSemaphore = dispatch_semaphore_create(BUFFER_SIZE)
   }
 
-  func render(nextRenderPass: NextRenderPass, shapeNodes: [ShapeNode], spriteNodes: [SpriteNode], textNodes: [TextNode]) {
-    dispatch_semaphore_wait(inflightSemaphore, DISPATCH_TIME_FOREVER)
+  func updateProjection(projection: Mat4) {
+    var projection = projection
+    uniformBuffer.update(&projection, size: sizeof(Mat4))
+  }
+
+  func render(nextRenderPass: NextRenderPass, shapeNodes: [ShapeNode], spriteNodes: [Int: [SpriteNode]], textNodes: [TextNode]) {
+//    dispatch_semaphore_wait(inflightSemaphore, DISPATCH_TIME_FOREVER)
 
     let commandBuffer = commandQueue.commandBuffer()
     commandBuffer.label = "Frame command buffer"
@@ -47,19 +61,20 @@ final class Renderer {
     if let (renderPassDescriptor, drawable) = nextRenderPass() {
       let encoder = commandBuffer.renderCommandEncoderWithDescriptor(renderPassDescriptor)
       encoder.setDepthStencilState(depthState)
-      //need to update the data I think
-      //encoder.setFrontFacingWinding(.CounterClockwise)
-      //encoder.setCullMode(.Back)
+      encoder.setFrontFacingWinding(.CounterClockwise)
+      encoder.setCullMode(.Back)
 
       shapePipeline.encode(encoder, nodes: shapeNodes)
-      spritePipeline.encode(encoder, nodes: spriteNodes)
+      for key in spriteNodes.keys {
+        spritePipeline.encode(encoder, nodes: spriteNodes[key]!)
+      }
       textPipeline.encode(encoder, nodes: textNodes)
 
       encoder.endEncoding()
 
-      commandBuffer.addCompletedHandler { _ in
-        dispatch_semaphore_signal(self.inflightSemaphore)
-      }
+//      commandBuffer.addCompletedHandler { _ in
+//        dispatch_semaphore_signal(self.inflightSemaphore)
+//      }
 
       commandBuffer.presentDrawable(drawable)
     }

@@ -51,14 +51,26 @@ final class TestGameViewController: UIViewController {
       let stairsUp = environmentAtlas.textureNamed("StairsUp") {
 
       var nodes = [SpriteNode]()
-      (0...155).forEach { _ in
-        let sp = SpriteNode(texture: wall)
-        let x = Float(arc4random_uniform(500))
-        let y = Float(arc4random_uniform(300))
-        sp.position = Point(x: x, y: y)
-        nodes += [sp]
-        scene.addNode(sp)
+      for y in (0..<20) {
+        for x in (0..<20) {
+          let sp = ShapeNode(size: Size(width: 64.0, height: 64.0), color: .green)
+          //let sp = SpriteNode(texture: openDoor)
+          let x = sp.size.width * Float(x)
+          let y = sp.size.height * Float(y)
+          sp.position = Point(x: x, y: y)
+          //nodes += [sp]
+          scene.addNode(sp)
+        }
       }
+
+//      (0...155).forEach { _ in
+//        let sp = SpriteNode(texture: wall)
+//        let x = Float(arc4random_uniform(500))
+//        let y = Float(arc4random_uniform(300))
+//        sp.position = Point(x: x, y: y)
+//        nodes += [sp]
+//        scene.addNode(sp)
+//      }
 
 
 
@@ -114,16 +126,14 @@ final class TestGameViewController: UIViewController {
     //let action = Action.moveTo(100.0, y: 0.0, duration: 1.0)
     //let action = Action.moveTo(CGPoint(x: 0.0, y: 0.0), duration: 1.0)
     let forever = Action.repeatForever(action)
-    colorRect.runAction(forever)
+    //colorRect.runAction(forever)
 
-    let camera = CameraNode(size: view.bounds.size.size)
-    camera.addNode(colorRect)
-    scene.addNode(camera)
+    scene.addUINode(colorRect)
 
-    let colorRect2 = ShapeNode(width: 100, height: 100, color: .red)
+    let colorRect2 = ShapeNode(width: 64, height: 64, color: .red)
     colorRect2.name = "Red rect"
-    //colorRect2.position = Point(x: 0, y: 0)
-    colorRect2.anchorPoint = Point(x: -1.0, y: -1.0)
+    colorRect2.position = Point(x: -128.0, y: -64.0)
+    //colorRect2.anchorPoint = Point(x: -1.0, y: -1.0)
     colorRect2.zPosition = 0
     scene.addNode(colorRect2)
 
@@ -190,18 +200,18 @@ extension TestGameViewController {
 
   func panCamera(p: UIPanGestureRecognizer) {
     var pos = p.translationInView(view)
-    pos.x *= CGFloat(scene.camera!.xScale)
-    pos.y *= CGFloat(scene.camera!.yScale)
+    pos.x *= CGFloat(scene.camera.xScale)
+    pos.y *= CGFloat(scene.camera.yScale)
     pos.x *= -1.0
     
-    scene.camera!.position += pos.point
+    scene.camera.position += pos.point
     p.setTranslation(.zero, inView: view)
   }
 
   func zoomCamera(p: UIPinchGestureRecognizer) {
-    let scale = self.scene.camera!.scale * Float(p.scale)
+    let scale = self.scene.camera.scale * Float(p.scale)
     let realScale = max(0.5, min(scale, 5.0));
-    self.scene.camera!.zoom = realScale
+    scene.camera.zoom = realScale
     p.scale = 1.0
   }
 }

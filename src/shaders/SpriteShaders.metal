@@ -11,8 +11,8 @@
 using namespace metal;
 
 struct VertexIn {
-  packed_float4 position;
-  packed_float2 texCoord;
+  packed_float4 position [[attribute(0)]];
+  packed_float2 texCoord [[attribute(1)]];
 };
 
 struct InstanceUniforms {
@@ -27,30 +27,33 @@ struct Uniforms {
 
 struct VertexOut {
   float4 position [[position]];
+  float4 color;
   float2 texCoord;
 };
 
-vertex VertexOut spriteVertex(uint vid [[vertex_id]],
+vertex VertexOut spriteVertex(ushort vid [[vertex_id]],
+                              ushort iid [[instance_id]],
                               const device VertexIn* vert [[buffer(0)]],
-                              const device InstanceUniforms& instanceUniforms [[buffer(1)]],
-                              const device Uniforms& uniforms [[buffer(2)]])
+                              constant InstanceUniforms* instanceUniforms [[buffer(1)]],
+                              constant Uniforms& uniforms [[buffer(2)]])
 {
   VertexIn vertIn = vert[vid];
+  InstanceUniforms instanceIn = instanceUniforms[iid];
 
   VertexOut outVertex;
-  outVertex.position = uniforms.projection * uniforms.view * instanceUniforms.model * float4(vertIn.position);
+  outVertex.position = uniforms.projection * uniforms.view * instanceIn.model * float4(vertIn.position);
+  outVertex.color = instanceIn.color;
   outVertex.texCoord = vertIn.texCoord;
 
   return outVertex;
 }
 
 fragment float4 spriteFragment(VertexOut interpolated [[stage_in]],
-                               constant InstanceUniforms &instanceUniforms [[buffer(0)]],
                                texture2d<float> tex2D [[texture(0)]],
                                sampler sampler2D [[sampler(0)]])
 {
   float4 color = tex2D.sample(sampler2D, interpolated.texCoord);
-  return color * instanceUniforms.color;
+  return color * interpolated.color;
 }
 
 //fragment float4 passThroughFragment(VertexOut interpolated [[stage_in]]) {

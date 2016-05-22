@@ -19,6 +19,8 @@ import QuartzCore
 public class GameView: UIView {
   private var currentScene: Scene?
 
+  private(set) var projection: Projection!
+
   private(set) var device: MTLDevice!
   private weak var metalLayer: CAMetalLayer?
   private var timer: CADisplayLink!
@@ -56,7 +58,7 @@ public class GameView: UIView {
     scene.view = self
     scene.didMoveToView(self)
     paused = false
-    timer.addToRunLoop(.mainRunLoop(), forMode: NSRunLoopCommonModes)//NSDefaultRunLoopMode)
+    timer.addToRunLoop(.mainRunLoop(), forMode: NSDefaultRunLoopMode)
   }
 }
 
@@ -86,12 +88,14 @@ extension GameView {
   }
 
   func setupRendering(device: MTLDevice) {
-    renderer = Renderer(device: device)
-
     let size = getNewSize()
     let width = Int(size.width)
     let height = Int(size.height)
     renderPassQueue = RenderPassQueue(depthTexture: RenderPassQueue.createDepthTexture(width, height: height, device: device))
+
+
+    projection = Projection(size: size.size)
+    renderer = Renderer(device: device, projection: projection.projection)
   }
 }
 
@@ -141,7 +145,7 @@ extension GameView {
 
   private func render(scene: Scene) {
     autoreleasepool {
-      renderer.render(renderPassQueue.next(self), shapeNodes: scene.shapeNodes, spriteNodes: scene.spriteNodes, textNodes: scene.textNodes)
+      renderer.render(renderPassQueue.next(self), shapeNodes: scene.graphCache.shapeNodes, spriteNodes: scene.graphCache.spriteNodes, textNodes: scene.graphCache.textNodes)
     }
   }
 
@@ -158,5 +162,8 @@ extension GameView {
     let height = Int(newSize.height)
     renderPassQueue.updateDepthTexture(width, height: height, device: device)
     metalLayer?.drawableSize = newSize
+
+    projection.update(newSize.size)
+    renderer.updateProjection(projection.projection)
   }
 }

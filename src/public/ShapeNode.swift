@@ -23,11 +23,11 @@ public class ShapeNode: Node, Renderable {
   public var texture: Texture? = nil
 
   public let vertexBuffer: MTLBuffer
-  public let indexBuffer: MTLBuffer
-  let uniformBufferQueue = BufferQueue()
 
   public var hidden = false
   public let isVisible = true
+
+  var quad: Quad
 
   /**
    Designated initializer. Creates a rectangular shape node of a given color.
@@ -40,10 +40,9 @@ public class ShapeNode: Node, Renderable {
    */
   public init(width: Float, height: Float, color: Color) {
     self.color = color
+    quad = Quad.rect(width, height)
 
-    let (vertexBuffer, indexBuffer) = ShapeNode.setupBuffers([Quad.rect(width, height)], device: Device.shared.device)
-    self.vertexBuffer = vertexBuffer
-    self.indexBuffer = indexBuffer
+    vertexBuffer = ShapeNode.setupBuffers([Quad.rect(width, height)], device: Device.shared.device)
 
     super.init(size: Size(width: width, height: height))
   }

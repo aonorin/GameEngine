@@ -9,11 +9,10 @@
 import simd
 
 struct Uniforms {
-  var projection: Mat4
-  var view: Mat4
+  let projection: Mat4
 }
 
 struct InstanceUniforms {
-  var model: Mat4
-  var color: Vec4
+  let model: Mat4
+  let color: Vec4
 }

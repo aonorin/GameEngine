@@ -41,17 +41,6 @@ protocol Renderable: class, NodeGeometry, Tree {
    */
   var vertexBuffer: MTLBuffer { get }
 
-  /**
-   Holds the indices for each vertex of an object. 
-   
-   - note: By default, this buffer holds [0, 1, 2, 2, 3, 0] where 0, 1, 2 is the upper left triangle, 0 being the lower left vertex.
-   
-   - seealso: `Quad` for an example.
-   */
-  var indexBuffer: MTLBuffer { get }
-
-  var uniformBufferQueue: BufferQueue { get }
-
   /// A texture to be applied in the fragment shader.
   var texture: Texture? { get set }
   /// A color to be applied during the fragment shader. By default, this is blended with the texture.
@@ -66,34 +55,23 @@ protocol Renderable: class, NodeGeometry, Tree {
   /// whether or not the object is visible from the current view point
   var isVisible: Bool { get }
 
-  /**
-   This is used by the various `Pipeline`s to encode the objects to the `MTLCommandBuffer` to be drawn by the GPU.
-
-   - parameter renderEncoder: The command encoder to use for encoding the commands for drawing the `Renderale` to the command buffer.
-   - parameter sampler:       The sampler to use to encode how the shader should sample the texture being applied.
-   */
-  func draw(renderEncoder: MTLRenderCommandEncoder, sampler: MTLSamplerState?)
+  func draw(renderEncoder: MTLRenderCommandEncoder, indexBuffer: MTLBuffer, uniformBuffer: MTLBuffer, sampler: MTLSamplerState?)
 }
 
 extension Renderable {
-  static func setupBuffers(quads: Quads, device: MTLDevice) -> (vertexBuffer: MTLBuffer, indexBuffer: MTLBuffer) {
+  static func setupBuffers(quads: Quads, device: MTLDevice) -> MTLBuffer {
     let vertexBuffer = device.newBufferWithBytes(quads.vertexData, length: quads.vertexSize, options: [])
-    let indexBuffer = device.newBufferWithBytes(quads.indicesData, length: quads.indicesSize, options: [])
 
-    return (vertexBuffer, indexBuffer)
+    return vertexBuffer
   }
 
-  func draw(renderEncoder: MTLRenderCommandEncoder, sampler: MTLSamplerState?) {
+  func draw(renderEncoder: MTLRenderCommandEncoder, indexBuffer: MTLBuffer, uniformBuffer: MTLBuffer, sampler: MTLSamplerState?) {
     renderEncoder.setVertexBuffer(vertexBuffer, offset: 0, atIndex: 0)
   
-    let uniforms = Uniforms(projection: camera!.projection, view: camera!.view)
-    let instanceUniforms = InstanceUniforms(model: parentTransform * transform, color: color.vec4)
+    var instanceUniforms = InstanceUniforms(model: model, color: color.vec4)
 
-    let (uniformOffset, instanceOffset) = uniformBufferQueue.next(uniforms, instanceUniforms: instanceUniforms)
-    renderEncoder.setVertexBuffer(uniformBufferQueue.instanceBuffer, offset: instanceOffset, atIndex: 1)
-    renderEncoder.setVertexBuffer(uniformBufferQueue.uniformBuffer, offset: uniformOffset, atIndex: 2)
-
-    renderEncoder.setFragmentBuffer(uniformBufferQueue.instanceBuffer, offset: instanceOffset, atIndex: 0)
+    renderEncoder.setVertexBuffer(uniformBuffer, offset: 0, atIndex: 2)
+    renderEncoder.setVertexBytes(&instanceUniforms, length: sizeof(InstanceUniforms), atIndex: 1)
 
     if let texture = texture?.texture, let sampler = sampler {
       renderEncoder.setFragmentTexture(texture, atIndex: 0)

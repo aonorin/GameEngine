@@ -82,10 +82,14 @@ public class Node: NodeGeometry, Updateable, Tree, Equatable, Hashable {
 
   public private(set) var transform: Mat4 = .identity
 
-  public weak var camera: CameraNode?
+  weak var camera: CameraNode? {
+    didSet {
+      updateTransform()
+    }
+  }
 
   //tree related
-  private var uuid = NSUUID().UUIDString
+  private let uuid = NSUUID().UUIDString
   public var hashValue: Int { return uuid.hashValue }
   public private(set) var nodes = Nodes()
   public private(set) var parent: Node? = nil
@@ -182,14 +186,31 @@ public class Node: NodeGeometry, Updateable, Tree, Equatable, Hashable {
     guard let index = nodes.find(node) else { return nil }
 
     if let scene = node.scene {
-      scene.updateNodes(node)
+      scene.removeNode(node)
     }
 
     return nodes.removeAtIndex(index) as? T
   }
 
   //MARK: transform caching
+  
+  var hasTransformUpdate = false
+  private var cachedModel: Mat4 = .identity
+  public var model: Mat4 {
+    if !hasTransformUpdate {
+      return cachedModel
+    }
+
+    hasTransformUpdate = false
+
+    cachedModel = parentTransform * transform
+    return cachedModel
+  }
+
   func updateTransform() {
+    hasTransformUpdate = true
+    nodes.forEach { $0.hasTransformUpdate = true }
+
     let x = self.x - (width * anchorPoint.x)
     let y = self.y - (height * anchorPoint.y)
 

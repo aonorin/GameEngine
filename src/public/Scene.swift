@@ -22,31 +22,19 @@ import UIKit
  - discussion: Unlike other `Node` types it's safe to force unwrap the `Camera` object on a scene. It will always have a default value and unless no other cameras are created
                it will be the same camera used for each node added to the scene. Also, it probably makes little sense to add a scene as a child to another scene and may cause problems.
  */
-public class Scene: Node {
+public class Scene {
   public weak var view: GameView?
 
-  private var updateNodes = Nodes()
+  let camera: CameraNode
+  let uiCamera: CameraNode
+
   public var allNodes: Nodes {
-    return updateNodes
+    return graphCache.allNodes
   }
 
-  private(set) var shapeNodes = [ShapeNode]()
-  private(set) var spriteNodes = [SpriteNode]()
-  private(set) var textNodes = [TextNode]()
+  let graphCache = GraphCache()
 
   var uniqueID = "1"
-
-  public override var parent: Node? {
-    return nil
-  }
-
-  public override var transform: Mat4 {
-    return Mat4.identity
-  }
-
-  public override var hasAction: Bool {
-    return false
-  }
 
   /**
    Create a scene of a given size. This will serve as the root node to which all other nodes should be added to.
@@ -55,13 +43,12 @@ public class Scene: Node {
 
    - returns: A new instance of `Scene`.
    */
-  public override init(size: Size) {
-    super.init(size: size)
+  public init(size: Size) {
+    camera = CameraNode(size: size)
+    uiCamera = CameraNode(size: size)
 
-    let camera = CameraNode(size: size)
-    addNode(camera)
-    self.camera = camera
-    self.scene = self
+    camera.scene = self
+    uiCamera.scene = self
   }
 
   /**
@@ -71,53 +58,31 @@ public class Scene: Node {
    */
   public func didMoveToView(view: GameView) {}
 
-  public override func addNode(node: Node) {
-    super.addNode(node)
+  public func addNode(node: Node) {
+    camera.addNode(node)
 
-    let allNodes = [node] + node.allNodes
+    graphCache.addNode(node)
+  }
 
-    updateNodes += allNodes
-
-    allNodes.forEach {
-      if $0 is Renderable {
-        if let shape = $0 as? ShapeNode {
-          shapeNodes += [shape]
-        }
-        else if let sprite = $0 as? SpriteNode {
-          spriteNodes += [sprite]
-        }
-        else if let text = $0 as? TextNode {
-          textNodes += [text]
-        }
-      }
+  public func removeNode<T : Node>(node: T?) {
+    if let node = camera.removeNode(node) {
+      graphCache.updateNodes(node)
     }
   }
 
-  private func removeNode(node: Node) {
-    if let index = updateNodes.find(node) {
-      guard let removed = updateNodes.removeAtIndex(index) as? Renderable else { return }
+  public func addUINode(node: Node) {
+    uiCamera.addNode(node)
 
-      if let shape = removed as? ShapeNode {
-          shapeNodes.remove(shape)
-        }
-        else if let sprite = removed as? SpriteNode {
-          spriteNodes.remove(sprite)
-        }
-        else if let text = removed as? TextNode {
-          textNodes.remove(text)
-      }
+    graphCache.addNode(node)
+  }
+
+  public func removeUINode(node: Node) {
+    if let node = uiCamera.removeNode(node) {
+      graphCache.addNode(node)
     }
   }
 
-  func updateNodes<T : Node>(node: T?) {
-    guard let node = node else { return }
-    guard updateNodes.find(node) != nil else { return }
-
-    (node as Node).allNodes.forEach {
-      removeNode($0)
-    }
-    removeNode(node)
-  }
+  public func update(delta: CFTimeInterval) {}
 }
 
 // MARK: Control related
@@ -165,8 +130,8 @@ extension Scene {
     let y = Float(height) - point.y
     let vec = Vec4(x, y, 1.0, 1.0)
 
-    let scale = 1.0 / camera!.scale
-    let translate = scale * (vec - camera!.view.translation)
+    let scale = 1.0 / camera.scale
+    let translate = scale * (vec - camera.view.translation)
 
     return Point(x: translate.x, y: translate.y)
   }

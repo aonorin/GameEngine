@@ -21,7 +21,7 @@ import simd
  */
 public protocol NodeGeometry: class {
   /// Any object that wishes to be placed in a `Scene` requires a `Camera`.
-  weak var camera: CameraNode? { get set }
+  //weak var camera: CameraNode? { get set }
 
   /**
    The size in world coordinates. This should NOT take the `scale` property into considering.
@@ -75,7 +75,7 @@ public protocol NodeGeometry: class {
    
    - seealso: `Renderable` and `Uniforms`.
    */
-  var transform: Mat4 { get }
+  var model: Mat4 { get }
 
   /**
    This function updates the actual geometry size of the vertices. It's not used as scaling is in the model matrix.

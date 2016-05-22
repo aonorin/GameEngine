@@ -17,15 +17,9 @@ struct Quad {
   }
   
   let vertices: Vertices
-  let indices: [UInt16]
 
   init(vertices: Vertices) {
     self.vertices = vertices
-
-    self.indices = [
-      0, 1, 2, //upper left triangle
-      2, 3, 0  //lower right triangle
-    ]
   }
 
   init(ll: Vertex, ul: Vertex, ur: Vertex, lr: Vertex) {
@@ -38,7 +32,7 @@ struct Quad {
     let ur = Vertex(x: width, y: height)
     let lr = Vertex(x: width)
 
-    return Quad(vertices: [ll, ul, ur, lr])
+    return Quad(vertices: [ul, ll, lr, ur])
   }
 
   static func rect(size: Size) -> Quad {
@@ -46,10 +40,10 @@ struct Quad {
   }
 
   static func spriteRect(width: Float, _ height: Float) -> Quad {
-    let ll = SpriteVertex(s: 0.0, t: 0.0)
-    let ul = SpriteVertex(s: 0.0, t: 1.0, y: height)
-    let ur = SpriteVertex(s: 1.0, t: 1.0, x: width, y: height)
-    let lr = SpriteVertex(s: 1.0, t: 0.0, x: width)
+    let ll = Vertex(s: 0.0, t: 0.0)
+    let ul = Vertex(s: 0.0, t: 1.0, y: height)
+    let ur = Vertex(s: 1.0, t: 1.0, x: width, y: height)
+    let lr = Vertex(s: 1.0, t: 0.0, x: width)
 
     return Quad(vertices: [ll, ul, ur, lr])
   }
@@ -70,16 +64,26 @@ struct Quad {
     let tWidth = frame.tWidth
     let tHeight = frame.tHeight
 
-    //lol everything is upside down and I don't understand it 
-    //should probably standardize this across every way of making sprites but who knows
-    //alternatively unflip the quads and flip them here which is what I should have did to begin with :(
-    let ll = SpriteVertex(s: (x + sWidth) / tWidth, t: (y + sHeight) / tHeight, x: sWidth)
-    let ul = SpriteVertex(s: (x + sWidth) / tWidth, t: y / tHeight, x: sWidth, y: sHeight)
-    let ur = SpriteVertex(s: x / tWidth, t: y / tHeight, y: sHeight)
-    let lr = SpriteVertex(s: x / tWidth, t: (y + sHeight) / tHeight)
+    let ll = Vertex(s: (x + sWidth) / tWidth, t: (y + sHeight) / tHeight, x: sWidth)
+    let ul = Vertex(s: (x + sWidth) / tWidth, t: y / tHeight, x: sWidth, y: sHeight)
+    let ur = Vertex(s: x / tWidth, t: y / tHeight, y: sHeight)
+    let lr = Vertex(s: x / tWidth, t: (y + sHeight) / tHeight)
 
     return Quad(vertices: [ll, ul, ur, lr])
   }
+}
+
+extension Quad {
+  static var indicesData: [UInt16] {
+    //this is clockwise but the textures end up being anticlockwise so ff == anti 
+    //which is why the Quad for ShapeNode is different from the sprite one
+    return [
+      0, 1, 2, //upper left triangle
+      2, 3, 0  //lower right triangle
+    ]
+  }
+
+  static var indicesSize: Int { return sizeof(UInt16) * indicesData.count }
 }
 
 extension CollectionType where Generator.Element == Quad {
@@ -88,19 +92,6 @@ extension CollectionType where Generator.Element == Quad {
   }
 
   var vertexSize: Int {
-    return FloatSize * vertexData.count
-  }
-
-  var indicesData: [UInt16] {
-    let unindexed = map { $0.indices }
-    let mIndices = (0..<unindexed.count).map { UInt16(4 * $0) } //4 == number vertices
-
-    return zip(mIndices, unindexed).flatMap { index, indices -> [UInt16] in
-      indices.map { index + $0 }
-    }
-  }
-
-  var indicesSize: Int {
-    return sizeof(UInt16) * indicesData.count
+    return sizeof(Float) * vertexData.count
   }
 }
