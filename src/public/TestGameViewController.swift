@@ -40,28 +40,54 @@ final class TestGameViewController: UIViewController {
 
     let view = self.view as! GameView
     view.clearColor = Color(0.0, 0.5, 0.0, 1.0)
-    scene = Scene(size: view.size)
+    scene = Scene(size: view.size, tileSize: 64)
     view.presentScene(scene)
 
-    if let environmentAtlas = TextureAtlas(named: "Environment"),
-      let wall = environmentAtlas.textureNamed("Wall"),
-      let floor = environmentAtlas.textureNamed("Floor"),
-      let openDoor = environmentAtlas.textureNamed("OpenDoor"),
-      let stairsDown = environmentAtlas.textureNamed("StairsDown"),
-      let stairsUp = environmentAtlas.textureNamed("StairsUp") {
+    let imageNames = ["Wall", "Floor", "OpenDoor", "StairsDown", "StairsUp"]
+    //let imageNames = ["AngelBlue", "AngelBrown", "AngelGrey", "AngelGrey2", "AngelOrange", "AngelPurple", "AngelRed", "AngelSilver", "AntBlack"]
 
-      var nodes = [SpriteNode]()
-      for y in (0..<20) {
-        for x in (0..<20) {
-          let sp = ShapeNode(size: Size(width: 64.0, height: 64.0), color: .green)
-          //let sp = SpriteNode(texture: openDoor)
-          let x = sp.size.width * Float(x)
-          let y = sp.size.height * Float(y)
-          sp.position = Point(x: x, y: y)
-          //nodes += [sp]
+    if let environmentAtlas = try? TextureAtlas(imageNames: imageNames, createLightMap: true),
+      let wall = environmentAtlas["Wall"],
+      let floor = environmentAtlas["Floor"],
+      let openDoor = environmentAtlas["OpenDoor"],
+      let stairsDown = environmentAtlas["StairsDown"],
+      let stairsUp = environmentAtlas["StairsUp"]
+//      let wall = environmentAtlas["AngelBlue"],
+//      let floor = environmentAtlas["AngelBrown"],
+//      let openDoor = environmentAtlas["AngelGrey"],
+//      let stairsDown = environmentAtlas["AngelOrange"],
+//      let stairsUp = environmentAtlas["AngelPurple"]
+    {
+      let _ = [wall, floor, openDoor, stairsDown, stairsUp]
+
+      (-5..<5).forEach { y in
+        (-5..<5).forEach { x in
+          let sp: SpriteNode
+          if y == -5 || y == 4 || x == -5 || x == 4 {
+            sp = SpriteNode(texture: wall)
+          }
+          else {
+            sp = SpriteNode(texture: floor)
+          }
+          sp.position = Point(x: sp.size.width * Float(x), y: sp.size.height * Float(y))
           scene.addNode(sp)
         }
       }
+
+
+//      var nodes = [SpriteNode]()
+//      for y in (-10..<10) {
+//        for x in (-10..<10) {
+//          let t = s[Int(arc4random_uniform(UInt32(s.count)))]
+//          let sp = SpriteNode(texture: t)
+//          let x = sp.size.width * Float(x)
+//          let y = sp.size.height * Float(y)
+//          sp.position = Point(x: x, y: y)
+//          //nodes += [sp]
+//          scene.addNode(sp)
+//        }
+//      }
+
 
 //      (0...155).forEach { _ in
 //        let sp = SpriteNode(texture: wall)
@@ -116,11 +142,10 @@ final class TestGameViewController: UIViewController {
     //    testText.name = "test text"
     //    scene.addNode(testText)
     //
-    let colorRect = ShapeNode(width: 100, height: 100, color: .gray)
+    let colorRect = ShapeNode(width: 64, height: 64, color: .gray)
     colorRect.name = "Gray rect"
     colorRect.anchorPoint = Point(x: 0.5, y: 0.5)
-    colorRect.x = 50
-    colorRect.y = 50
+    colorRect.position = Point(x: 50, y: 50)
 
     let action = Action.rotateBy(Float(360.0), duration: 1.0)
     //let action = Action.moveTo(100.0, y: 0.0, duration: 1.0)
@@ -137,12 +162,12 @@ final class TestGameViewController: UIViewController {
     colorRect2.zPosition = 0
     scene.addNode(colorRect2)
 
-    let colorRect3 = ShapeNode(width: 100, height: 100, color: .blue)
-    colorRect3.name = "blue rect"
-    //colorRect3.position = Point(x: 100, y: 50)
-    //colorRect3.anchorPoint = Point(x: 0.5, y: 0.5)
-    colorRect3.zPosition = 0
-    colorRect2.addNode(colorRect3)
+//    let colorRect3 = ShapeNode(width: 100, height: 100, color: .blue)
+//    colorRect3.name = "blue rect"
+//    //colorRect3.position = Point(x: 100, y: 50)
+//    //colorRect3.anchorPoint = Point(x: 0.5, y: 0.5)
+//    colorRect3.zPosition = 0
+//    colorRect2.addNode(colorRect3)
 
     //let translate1 = Action.moveBy(150, y: 0.0, duration: 1.0)
     //let translate2 = Action.moveBy(-150, y: 0.0, duration: 1.0)

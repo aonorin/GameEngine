@@ -11,10 +11,7 @@ import MetalKit
 import simd
 
 protocol Pipeline {
-  var pipelineState: MTLRenderPipelineState { get }
-  var sampler: MTLSamplerState? { get }
-
-  init(device: MTLDevice, indexBuffer: Buffer, uniformBuffer: Buffer, vertexProgram: String, fragmentProgram: String)
+  var label: String { get }
 }
 
 extension Pipeline {
@@ -22,19 +19,36 @@ extension Pipeline {
     return "\(Self.self)"
   }
 
-  static func getPrograms(device: MTLDevice, vertexProgram: String, fragmentProgram: String) -> (vertexProgram: MTLFunction, fragmentProgram: MTLFunction) {
+  static func getLibrary(device: MTLDevice) -> MTLLibrary {
     #if TESTTARGET
-    let defaultLibrary = device.newDefaultLibrary()!
+    return device.newDefaultLibrary()!
     #else
-    let defaultLibrary = try! device.newLibraryWithFile(NSBundle(forClass: ShapePipeline.self).URLForResource("default", withExtension: "metallib")!.path!)
+    return try! device.newLibraryWithFile(NSBundle(forClass: ShapePipeline.self).URLForResource("default", withExtension: "metallib")!.path!)
     #endif
+  }
 
-    guard let vProgram = defaultLibrary.newFunctionWithName(vertexProgram) else {
-      fatalError("no vertex program for name: \(vertexProgram)")
+  static func newFunction(library: MTLLibrary, functionName: String) -> MTLFunction {
+    guard let function = library.newFunctionWithName(functionName) else {
+      fatalError("No function for name: \(functionName)")
     }
-    guard let fProgram = defaultLibrary.newFunctionWithName(fragmentProgram) else {
-      fatalError("no fragment program for name: \(fragmentProgram)")
-    }
+    return function
+  }
+}
+
+protocol RenderPipeline: Pipeline {
+  associatedtype NodeType
+
+  var pipelineState: MTLRenderPipelineState { get }
+  func encode(encoder: MTLRenderCommandEncoder, vertexBuffer: Buffer, indexBuffer: Buffer, uniformBuffer: Buffer, nodes: [NodeType])
+}
+
+extension RenderPipeline {
+  static func getPrograms(device: MTLDevice, vertexProgram: String, fragmentProgram: String) -> (vertexProgram: MTLFunction, fragmentProgram: MTLFunction) {
+    let defaultLibrary = Self.getLibrary(device)
+
+    let vProgram = Self.newFunction(defaultLibrary, functionName: vertexProgram)
+    let fProgram = Self.newFunction(defaultLibrary, functionName: fragmentProgram)
+
     return (vProgram, fProgram)
   }
 
@@ -59,18 +73,24 @@ extension Pipeline {
     pipelineDescriptor.colorAttachments[0].alphaBlendOperation = .Add
 
     //vertex stuff
-    let vertexDescriptor = MTLVertexDescriptor();
-    vertexDescriptor.attributes[0].format = .Float4;
-    vertexDescriptor.attributes[0].offset = 0;
-    vertexDescriptor.attributes[0].bufferIndex = 0;
-    vertexDescriptor.attributes[1].format = .Float2;
-    vertexDescriptor.attributes[1].offset = sizeof(packed_float4);
-    vertexDescriptor.attributes[1].bufferIndex = 0;
-    vertexDescriptor.layouts[0].stepFunction = .PerVertex;
-    vertexDescriptor.layouts[0].stride = Quad.size;
+    let vertexDescriptor = MTLVertexDescriptor()
+    vertexDescriptor.attributes[0].format = .Float4
+    vertexDescriptor.attributes[0].offset = 0
+    vertexDescriptor.attributes[0].bufferIndex = 0
+
+    vertexDescriptor.attributes[1].format = .Float4
+    vertexDescriptor.attributes[1].offset = sizeof(packed_float4)
+    vertexDescriptor.attributes[1].bufferIndex = 0
+
+    vertexDescriptor.attributes[2].format = .Float2
+    vertexDescriptor.attributes[2].offset = sizeof(packed_float4) * 2
+    vertexDescriptor.attributes[2].bufferIndex = 0
+
+    vertexDescriptor.layouts[0].stepFunction = .PerVertex
+    vertexDescriptor.layouts[0].stride = strideof(Vertex)
 
     pipelineDescriptor.vertexDescriptor = vertexDescriptor
-    
+
     return pipelineDescriptor
   }
 
@@ -89,40 +109,35 @@ extension Pipeline {
     renderEncoder.label = label
     renderEncoder.setRenderPipelineState(pipelineState)
     renderEncoder.setDepthStencilState(depthState)
-    
+
     return renderEncoder
   }
 }
 
 final class PipelineFactory {
   private let device: MTLDevice
-  private let indexBuffer: Buffer
-  private let uniformBuffer: Buffer
 
-  init(device: MTLDevice, indexBuffer: Buffer, uniformBuffer: Buffer) {
+  init(device: MTLDevice) {
     self.device = device
-    //indexBuffer = device.newBufferWithBytes(Quad.indicesData, length: Quad.indicesSize, options: .CPUCacheModeDefaultCache)
-    self.indexBuffer = indexBuffer
-    self.uniformBuffer = uniformBuffer
   }
 
   func constructDepthStencil() -> MTLDepthStencilState {
     let depthStateDescriptor = MTLDepthStencilDescriptor()
     depthStateDescriptor.depthCompareFunction = .GreaterEqual
     depthStateDescriptor.depthWriteEnabled = true
-    
+
     return device.newDepthStencilStateWithDescriptor(depthStateDescriptor)
   }
 
   func constructShapePipeline() -> ShapePipeline {
-    return ShapePipeline(device: device, indexBuffer: indexBuffer, uniformBuffer: uniformBuffer)
+    return ShapePipeline(device: device)
   }
 
   func constructSpritePipeline() -> SpritePipeline {
-    return SpritePipeline(device: device, indexBuffer: indexBuffer, uniformBuffer: uniformBuffer)
+    return SpritePipeline(device: device)
   }
 
   func constructTextPipeline() -> TextPipeline {
-    return TextPipeline(device: device, indexBuffer: indexBuffer, uniformBuffer: uniformBuffer)
+    return TextPipeline(device: device)
   }
 }

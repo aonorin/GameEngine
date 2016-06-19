@@ -8,44 +8,53 @@
 
 import Metal
 
-final class ShapePipeline: Pipeline {
-  let pipelineState: MTLRenderPipelineState
-  let sampler: MTLSamplerState? = nil
+private struct ShapeUniforms {
+  let model: Mat4
+  let color: Vec4
+}
 
-  private let indexBuffer: Buffer
-  private let uniformBuffer: Buffer
+final class ShapePipeline: RenderPipeline {
+  let pipelineState: MTLRenderPipelineState
+
+  private var didSetBuffer = false
+  private let instanceBuffer: Buffer
 
   private struct Programs {
-    static let Shader = "ColorShaders"
+    static let Shader = "ShapeShaders"
     static let Vertex = "colorVertex"
     static let Fragment = "colorFragment"
   }
-  
+
   init(device: MTLDevice,
-       indexBuffer: Buffer,
-       uniformBuffer: Buffer,
        vertexProgram: String = Programs.Vertex,
        fragmentProgram: String = Programs.Fragment) {
-    self.indexBuffer = indexBuffer
-    self.uniformBuffer = uniformBuffer
 
     let pipelineDescriptor = ShapePipeline.createPipelineDescriptor(device, vertexProgram: vertexProgram, fragmentProgram: fragmentProgram)
     self.pipelineState = ShapePipeline.createPipelineState(device, descriptor: pipelineDescriptor)!
 
-    tmpBuffer = device.newBufferWithLength(500 * Vertex.dataSize, options: .CPUCacheModeDefaultCache)
-    uBuffer = device.newBufferWithLength(500 * sizeof(InstanceUniforms), options: .CPUCacheModeDefaultCache)
+    instanceBuffer = Buffer(length: 1000 * sizeof(Mat4))
   }
-
-  var tmpBuffer: MTLBuffer
-  var uBuffer: MTLBuffer
 }
 
 extension ShapePipeline {
-  func encode(encoder: MTLRenderCommandEncoder, nodes: [ShapeNode]) {
+  func encode(encoder: MTLRenderCommandEncoder, vertexBuffer: Buffer, indexBuffer: Buffer, uniformBuffer: Buffer, nodes: [ShapeNode]) {
+    guard let node = nodes.first else { return }
+
     encoder.setRenderPipelineState(pipelineState)
 
-    nodes.forEach {
-      $0.draw(encoder, indexBuffer: indexBuffer.buffer, uniformBuffer: uniformBuffer.buffer, sampler: sampler)
+    if !didSetBuffer {
+      didSetBuffer = true
+      vertexBuffer.update(node.quad.vertices, size: node.quad.size)
     }
+    encoder.setVertexBuffer(vertexBuffer.buffer, offset: 0, atIndex: 0)
+
+    nodes.enumerate().forEach { (i, node) in
+      instanceBuffer.update([ShapeUniforms(model: node.model, color: node.color.vec4)], size: sizeof(ShapeUniforms), offset: sizeof(ShapeUniforms) * i)
+    }
+    encoder.setVertexBuffer(instanceBuffer.buffer, offset: 0, atIndex: 1)
+
+    encoder.setVertexBuffer(uniformBuffer.buffer, offset: 0, atIndex: 2)
+
+    encoder.drawIndexedPrimitives(.Triangle, indexCount: indexBuffer.buffer.length / sizeof(UInt16), indexType: .UInt16, indexBuffer: indexBuffer.buffer, indexBufferOffset: 0, instanceCount: nodes.count)
   }
 }

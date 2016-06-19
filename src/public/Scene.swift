@@ -23,18 +23,20 @@ import UIKit
                it will be the same camera used for each node added to the scene. Also, it probably makes little sense to add a scene as a child to another scene and may cause problems.
  */
 public class Scene {
-  public weak var view: GameView?
+  public weak var view: GameView? {
+    didSet {
+      graphCache.bufferManager = view?.bufferManager
+    }
+  }
 
-  let camera: CameraNode
-  let uiCamera: CameraNode
+  public private(set) var camera: CameraNode
+  let tileSize: Int
 
   public var allNodes: Nodes {
     return graphCache.allNodes
   }
 
   let graphCache = GraphCache()
-
-  var uniqueID = "1"
 
   /**
    Create a scene of a given size. This will serve as the root node to which all other nodes should be added to.
@@ -43,12 +45,12 @@ public class Scene {
 
    - returns: A new instance of `Scene`.
    */
-  public init(size: Size) {
+  public init(size: Size, tileSize: Int) {
+    self.tileSize = tileSize
+
     camera = CameraNode(size: size)
-    uiCamera = CameraNode(size: size)
 
     camera.scene = self
-    uiCamera.scene = self
   }
 
   /**
@@ -71,15 +73,12 @@ public class Scene {
   }
 
   public func addUINode(node: Node) {
-    uiCamera.addNode(node)
-
-    graphCache.addNode(node)
+    node.isUINode = true
+    addNode(node)
   }
 
-  public func removeUINode(node: Node) {
-    if let node = uiCamera.removeNode(node) {
-      graphCache.addNode(node)
-    }
+  func updateNode(quad: Quad, index: Int, key: Int) {
+    graphCache.updateNode(quad, index: index, key: key)
   }
 
   public func update(delta: CFTimeInterval) {}
@@ -134,5 +133,11 @@ extension Scene {
     let translate = scale * (vec - camera.view.translation)
 
     return Point(x: translate.x, y: translate.y)
+  }
+}
+
+extension Scene {
+  func updateCameras(size: Size) {
+    camera.updateSize(size)
   }
 }

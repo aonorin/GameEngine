@@ -37,8 +37,9 @@ public class TextNode: Node, Renderable {
     }
   }
 
+  private(set) var quad: Quad
+
   public var texture: Texture?
-  public let vertexBuffer: MTLBuffer
 
   public var hidden = false
   public let isVisible = true
@@ -60,9 +61,9 @@ public class TextNode: Node, Renderable {
     self.color = color
 
     let quads = TextNode.makeTextQuads(text, color: color, fontAtlas: fontAtlas)
-    self.texture = TextNode.loadTexture(fontAtlas, device: Device.shared.device)
+    quad = quads.first!
 
-    vertexBuffer = TextNode.setupBuffers(quads, device: Device.shared.device)
+    self.texture = TextNode.loadTexture(fontAtlas, device: Device.shared.device)
 
     super.init(size: texture!.size)
   }
@@ -116,11 +117,11 @@ public class TextNode: Node, Renderable {
       let minT = Float(glyphInfo.topLeftTexCoord.y)
       let maxT = Float(glyphInfo.bottomRightTexCoord.y)
 
-      let ll = Vertex(s: minS, t: maxT, x: minX, y: minY)
-      let ul = Vertex(s: minS, t: minT, x: minX, y: maxY)
-      let ur = Vertex(s: maxS, t: minT, x: maxX, y: maxY)
-      let lr = Vertex(s: maxS, t: maxT, x: maxX, y: minY)
-      rects += [Quad(ll: ll, ul: ul, ur: ur, lr: lr)]
+//      let ll = Vertex(s: minS, t: maxT, x: minX, y: minY)
+//      let ul = Vertex(s: minS, t: minT, x: minX, y: maxY)
+//      let ur = Vertex(s: maxS, t: minT, x: maxX, y: maxY)
+//      let lr = Vertex(s: maxS, t: maxT, x: maxX, y: minY)
+//      rects += [Quad(ll: ll, ul: ul, ur: ur, lr: lr)]
     }
 
     return rects

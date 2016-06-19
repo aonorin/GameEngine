@@ -35,6 +35,13 @@ public class Node: NodeGeometry, Updateable, Tree, Equatable, Hashable {
   public var name: String? = nil
 
   public var scene: Scene? = nil
+
+  var index: Int = 0
+  var isUINode = false {
+    didSet {
+      updateTransform()
+    }
+  }
   
   public var size: Size {
     didSet {
@@ -46,8 +53,8 @@ public class Node: NodeGeometry, Updateable, Tree, Equatable, Hashable {
   public var frame: Rect {
     var ret = boundingRect
     allParents.forEach { parent in
-      ret.x += parent.x - (parent.width * parent.anchorPoint.x)
-      ret.y += parent.y - (parent.height * parent.anchorPoint.y)
+      ret.x += parent.position.x - (parent.width * parent.anchorPoint.x)
+      ret.y += parent.position.y - (parent.height * parent.anchorPoint.y)
     }
     ret.x -= width * anchorPoint.x
     ret.y -= height * anchorPoint.y
@@ -58,10 +65,7 @@ public class Node: NodeGeometry, Updateable, Tree, Equatable, Hashable {
     didSet { updateTransform() }
   }
 
-  public var x: Float = 0.0 {
-    didSet { updateTransform() }
-  }
-  public var y: Float = 0.0 {
+  public var position = Point(x: 0, y: 0) {
     didSet { updateTransform() }
   }
 
@@ -82,11 +86,7 @@ public class Node: NodeGeometry, Updateable, Tree, Equatable, Hashable {
 
   public private(set) var transform: Mat4 = .identity
 
-  weak var camera: CameraNode? {
-    didSet {
-      updateTransform()
-    }
-  }
+  weak var camera: CameraNode?
 
   //tree related
   private let uuid = NSUUID().UUIDString
@@ -211,8 +211,8 @@ public class Node: NodeGeometry, Updateable, Tree, Equatable, Hashable {
     hasTransformUpdate = true
     nodes.forEach { $0.hasTransformUpdate = true }
 
-    let x = self.x - (width * anchorPoint.x)
-    let y = self.y - (height * anchorPoint.y)
+    let x = position.x - (width * anchorPoint.x)
+    let y = position.y - (height * anchorPoint.y)
 
     let xRot = 0.0 - (width * anchorPoint.x)
     let yRot = 0.0 - (height * anchorPoint.y)
@@ -222,7 +222,12 @@ public class Node: NodeGeometry, Updateable, Tree, Equatable, Hashable {
     let rotation = Mat4.rotate(-1 * self.rotation)
     let rotationTranslate = Mat4.translate(xRot, yRot, z)
 
-    transform = worldTranslate * rotation * rotationTranslate * scale
+    var view = Mat4.identity
+    if let inverseView = camera?.inverseView where isUINode {
+      view = inverseView
+    }
+
+    transform = view * worldTranslate * rotation * rotationTranslate * scale
   }
 }
 
