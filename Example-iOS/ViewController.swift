@@ -1,4 +1,10 @@
 //
+//  ViewController.swift
+//  Example-iOS
+//
+//  Created by Anthony Green on 12/24/16.
+//  Copyright © 2016 Anthony Green. All rights reserved.
+///
 //  TestGameViewController.swift
 //  MKTest
 //
@@ -6,32 +12,9 @@
 //  Copyright © 2015 Anthony Green. All rights reserved.
 //
 
-import Metal
-import MetalKit
 import UIKit
 
-/**
- The `TestGameViewController` is responsible for mainly the game/rendering loop.
-
- A basic setup in viewDidLoad() would look something like
-
- ````
- super.viewDidLoad()
-
- let view = self.view as! GameView
- scene = Scene(size: view.bounds.size)
- view.presentScene(scene)
- ````
- */
-final class TestGameViewController: UIViewController {
-  var scene: Scene!
-
-  fileprivate var currentTime = 0.0
-
-  override func loadView() {
-    view = GameView(frame: UIScreen.main.bounds)
-  }
-
+final class TestGameViewController: GameViewController {
   override func viewDidLoad() {
     super.viewDidLoad()
 
@@ -40,24 +23,24 @@ final class TestGameViewController: UIViewController {
 
     let view = self.view as! GameView
     view.clearColor = Color(0.0, 0.5, 0.0, 1.0)
-    scene = Scene(size: view.size, tileSize: 64)
+    scene = Scene(size: view.bounds.size.size)
     scene.ambientLightColor = Color(0.25, 0.25, 0.25)
     view.presentScene(scene)
 
     let imageNames = ["Wall", "Floor", "OpenDoor", "StairsDown"]
     //let imageNames = ["AngelBlue", "AngelBrown", "AngelGrey", "AngelGrey2", "AngelOrange", "AngelPurple", "AngelRed", "AngelSilver", "AntBlack"]
 
-    if let environmentAtlas = try? TextureAtlas(imageNames: imageNames, createLightMap: true),
+    if let environmentAtlas = try? TextureAtlas(imageNames: imageNames, contentScale: view.contentScaleFactor, createLightMap: true),
       let wall = environmentAtlas["Wall"],
       let floor = environmentAtlas["Floor"],
       let openDoor = environmentAtlas["OpenDoor"],
       let stairsDown = environmentAtlas["StairsDown"]
       //let stairsUp = environmentAtlas["StairsUp"]
-//      let wall = environmentAtlas["AngelBlue"],
-//      let floor = environmentAtlas["AngelBrown"],
-//      let openDoor = environmentAtlas["AngelGrey"],
-//      let stairsDown = environmentAtlas["AngelOrange"],
-//      let stairsUp = environmentAtlas["AngelPurple"]
+      //      let wall = environmentAtlas["AngelBlue"],
+      //      let floor = environmentAtlas["AngelBrown"],
+      //      let openDoor = environmentAtlas["AngelGrey"],
+      //      let stairsDown = environmentAtlas["AngelOrange"],
+      //      let stairsUp = environmentAtlas["AngelPurple"]
     {
       let _ = [wall, floor, openDoor, stairsDown]
 
@@ -68,6 +51,7 @@ final class TestGameViewController: UIViewController {
             sp = SpriteNode(texture: wall)
           }
           else {
+            //sp = SpriteNode(named: "Floor")
             sp = SpriteNode(texture: floor)
           }
           sp.position = Point(x: sp.size.width * Float(x), y: sp.size.height * Float(y))
@@ -75,64 +59,64 @@ final class TestGameViewController: UIViewController {
         }
       }
 
-//      let stairs = SpriteNode(texture: stairsDown)
-//      stairs.anchorPoint = Point(x: 0.5, y: 0.5)
-//      stairs.position = Point(x: 0.0, y: 0.0)
-//      stairs.zPosition = 1
-//      scene.addNode(stairs)
+      //      let stairs = SpriteNode(texture: stairsDown)
+      //      stairs.anchorPoint = Point(x: 0.5, y: 0.5)
+      //      stairs.position = Point(x: 0.0, y: 0.0)
+      //      stairs.zPosition = 1
+      //      scene.addNode(stairs)
 
       let light = LightNode(position: Point(x: 0.0, y: 0.0), color: Color(0.67, 0.16, 0.0), radius: 400.0)
       scene.addNode(light)
-//      var nodes = [SpriteNode]()
-//      for y in (-10..<10) {
-//        for x in (-10..<10) {
-//          let t = s[Int(arc4random_uniform(UInt32(s.count)))]
-//          let sp = SpriteNode(texture: t)
-//          let x = sp.size.width * Float(x)
-//          let y = sp.size.height * Float(y)
-//          sp.position = Point(x: x, y: y)
-//          //nodes += [sp]
-//          scene.addNode(sp)
-//        }
-//      }
+      //      var nodes = [SpriteNode]()
+      //      for y in (-10..<10) {
+      //        for x in (-10..<10) {
+      //          let t = s[Int(arc4random_uniform(UInt32(s.count)))]
+      //          let sp = SpriteNode(texture: t)
+      //          let x = sp.size.width * Float(x)
+      //          let y = sp.size.height * Float(y)
+      //          sp.position = Point(x: x, y: y)
+      //          //nodes += [sp]
+      //          scene.addNode(sp)
+      //        }
+      //      }
 
 
-//      (0...155).forEach { _ in
-//        let sp = SpriteNode(texture: wall)
-//        let x = Float(arc4random_uniform(500))
-//        let y = Float(arc4random_uniform(300))
-//        sp.position = Point(x: x, y: y)
-//        nodes += [sp]
-//        scene.addNode(sp)
-//      }
+      //      (0...155).forEach { _ in
+      //        let sp = SpriteNode(texture: wall)
+      //        let x = Float(arc4random_uniform(500))
+      //        let y = Float(arc4random_uniform(300))
+      //        sp.position = Point(x: x, y: y)
+      //        nodes += [sp]
+      //        scene.addNode(sp)
+      //      }
 
 
 
 
-//      let sp = SpriteNode(texture: wall)
-//      sp.position = Point(x: 0.0, y: 0.0)
-//      sp.name = "wall"
-//      scene.addNode(sp)
-//
-//      let sp2 = SpriteNode(texture: floor)
-//      sp2.position = Point(x: 64.0, y: 0.0)
-//      sp2.name = "floor"
-//      scene.addNode(sp2)
-//
-//      let sp3 = SpriteNode(texture: openDoor)
-//      sp3.position = Point(x: Float(sp3.size.width * 2), y: 0.0)
-//      sp3.name = "open door"
-//      scene.addNode(sp3)
-//
-//      let sp4 = SpriteNode(texture: stairsDown)
-//      sp4.position = Point(x: Float(sp4.size.width * 3), y: 0.0)
-//      sp4.name = "stairs down"
-//      scene.addNode(sp4)
-//
-//      let sp5 = SpriteNode(texture: stairsUp)
-//      sp5.position = Point(x: Float(sp5.size.width * 4), y: 0.0)
-//      sp5.name = "stairs up"
-//      scene.addNode(sp5)
+      //      let sp = SpriteNode(texture: wall)
+      //      sp.position = Point(x: 0.0, y: 0.0)
+      //      sp.name = "wall"
+      //      scene.addNode(sp)
+      //
+      //      let sp2 = SpriteNode(texture: floor)
+      //      sp2.position = Point(x: 64.0, y: 0.0)
+      //      sp2.name = "floor"
+      //      scene.addNode(sp2)
+      //
+      //      let sp3 = SpriteNode(texture: openDoor)
+      //      sp3.position = Point(x: Float(sp3.size.width * 2), y: 0.0)
+      //      sp3.name = "open door"
+      //      scene.addNode(sp3)
+      //
+      //      let sp4 = SpriteNode(texture: stairsDown)
+      //      sp4.position = Point(x: Float(sp4.size.width * 3), y: 0.0)
+      //      sp4.name = "stairs down"
+      //      scene.addNode(sp4)
+      //
+      //      let sp5 = SpriteNode(texture: stairsUp)
+      //      sp5.position = Point(x: Float(sp5.size.width * 4), y: 0.0)
+      //      sp5.name = "stairs up"
+      //      scene.addNode(sp5)
     }
 
     //    let texture = Texture(imageName: "Knight")
@@ -170,12 +154,12 @@ final class TestGameViewController: UIViewController {
     colorRect2.zPosition = 0
     scene.addNode(colorRect2)
 
-//    let colorRect3 = ShapeNode(width: 100, height: 100, color: .blue)
-//    colorRect3.name = "blue rect"
-//    //colorRect3.position = Point(x: 100, y: 50)
-//    //colorRect3.anchorPoint = Point(x: 0.5, y: 0.5)
-//    colorRect3.zPosition = 0
-//    colorRect2.addNode(colorRect3)
+    //    let colorRect3 = ShapeNode(width: 100, height: 100, color: .blue)
+    //    colorRect3.name = "blue rect"
+    //    //colorRect3.position = Point(x: 100, y: 50)
+    //    //colorRect3.anchorPoint = Point(x: 0.5, y: 0.5)
+    //    colorRect3.zPosition = 0
+    //    colorRect2.addNode(colorRect3)
 
     //let translate1 = Action.moveBy(150, y: 0.0, duration: 1.0)
     //let translate2 = Action.moveBy(-150, y: 0.0, duration: 1.0)
@@ -230,7 +214,7 @@ extension TestGameViewController {
       print($0.frame)
     }
   }
-
+  
   func panCamera(_ p: UIPanGestureRecognizer) {
     var pos = p.translation(in: view)
     pos.x *= CGFloat(scene.camera.xScale)
@@ -240,7 +224,7 @@ extension TestGameViewController {
     scene.camera.position += pos.point
     p.setTranslation(.zero, in: view)
   }
-
+  
   func zoomCamera(_ p: UIPinchGestureRecognizer) {
     let scale = self.scene.camera.scale * Float(p.scale)
     let realScale = max(0.5, min(scale, 5.0));

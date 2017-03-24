@@ -6,7 +6,11 @@
 //  Copyright © 2016 Anthony Green. All rights reserved.
 //
 
-import UIKit
+#if os(iOS)
+  import UIKit
+#else
+  import Cocoa
+#endif
 
 public extension Float {
   var cg: CGFloat {
@@ -50,11 +54,13 @@ public extension CGSize {
   public var w: Float {
     return Float(width)
   }
+  
   /// Get the height as a `Float`
   public var h: Float {
     return Float(height)
   }
 
+  /// Convenience for hiding the CGFloat sizes
   public var size: Size {
     return Size(width: w, height: h)
   }

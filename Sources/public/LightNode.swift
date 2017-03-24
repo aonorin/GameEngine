@@ -7,7 +7,11 @@
 //
 
 import simd
+#if os(iOS)
 import UIKit
+#else
+import Cocoa
+#endif
 
 public final class LightNode: Node {
   var lightData: LightData {
@@ -51,11 +55,13 @@ public final class LightNode: Node {
     guard let camera = camera else { return .zero }
 
     //this needs to be in points for some reason I think
-    let resolution = UIScreen.main.bounds.size
+    //NO IT DOESNT OMG I don't know when this happened
+    //using native screen size doesn't work
+    let resolution = Screen.main.nativeBounds.size
     return Size(width: resolution.w * camera.zoom, height: resolution.h * camera.zoom)
   }
 
-  init(position: Point, color: Color, radius: Float) {
+  public init(position: Point, color: Color, radius: Float) {
     self.color = color
     self.radius = radius
 

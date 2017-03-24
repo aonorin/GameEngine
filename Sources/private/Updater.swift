@@ -9,42 +9,59 @@
 import Foundation
 import QuartzCore
 
-@objc protocol ScreenRefresher {
-  var timestamp: Double { get }
-}
+#if !os(macOS)
+  typealias DisplayLink = CADisplayLink
+#else
+  typealias DisplayLink = CVDisplayLink
+#endif
 
 final class Updater {
-  var scene: Scene?
+  private weak var gameView: GameView?
+  fileprivate var previousTime = 0.0
+  fileprivate var displayLink: DisplayLink?
 
-  var timestamp: CFTimeInterval = 0.0
-  @objc func update(_ screenRefresher: ScreenRefresher) {
-    if timestamp == 0.0 {
-      timestamp = screenRefresher.timestamp
+  init(gameView: GameView) {
+    self.gameView = gameView
+    createDisplayLink()
+  }
+
+  fileprivate func update(time: Double) {
+    if previousTime == 0.0 {
+      previousTime = time
     }
-
-    var elapsedTime = screenRefresher.timestamp - self.timestamp
-    //not sure how to deal with this if you hit a break point the timer gets off making it difficult to figure out what's going on
-    #if DEBUG
-//    if showFPS {
-//      let comeBackToThis = 1
-      //need to figure out how to "animate" text changes for this singular purpose
-
-//      let time = elapsedTime > 0.0 ? elapsedTime : 1.0
-//      currentScene.fpsText.text = "\(Int(1.0 / time))"
-//      currentScene.fpsText.buildMesh(device!)
-//      currentScene.fpsText.updateVertices(device!)
-//    }
-
-    if elapsedTime >= 0.02 {
-      elapsedTime = 1.0 / 60.0
-    }
-    #endif
-    
-    timestamp = screenRefresher.timestamp
-    scene?.update(elapsedTime)
+    gameView?.update(delta: time - previousTime)
+    previousTime = time
   }
 }
-
-// MARK: iOS
-extension CADisplayLink: ScreenRefresher {}
+extension Updater {
+#if !os(macOS)
+  func createDisplayLink() {
+    displayLink = CADisplayLink(target: self, selector: #selector(newFrame(_:)))
+    displayLink?.add(to: .main, forMode: .commonModes)
+  }
+  
+  @objc private func newFrame(_ displayLink: CADisplayLink) {
+    update(time: displayLink.timestamp)
+  }
+#else
+  func createDisplayLink() {
+    func callback(link: CVDisplayLink,
+                  inNow: UnsafePointer<CVTimeStamp>, //wtf is this?
+                  inOutputTime: UnsafePointer<CVTimeStamp>,
+                  flagsIn: CVOptionFlags,
+                  flagsOut: UnsafeMutablePointer<CVOptionFlags>,
+                  displayLinkContext: UnsafeMutableRawPointer?) -> CVReturn {
+      unsafeBitCast(displayLinkContext, to: Updater.self).update(time: CACurrentMediaTime())
+      return kCVReturnSuccess
+    }
+  
+    CVDisplayLinkCreateWithActiveCGDisplays(&displayLink)
+    guard let displayLink = displayLink else {
+      fatalError("Unable to create a CVDisplayLink?")
+    }
+    CVDisplayLinkSetOutputCallback(displayLink, callback, unsafeBitCast(self, to: UnsafeMutableRawPointer.self))
+    CVDisplayLinkStart(displayLink)
+  }
+#endif
+}
 

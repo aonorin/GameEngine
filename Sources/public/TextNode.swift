@@ -10,7 +10,11 @@
 
 import CoreText
 import Metal
-import UIKit
+#if os(iOS)
+  import UIKit
+#else
+  import Cocoa
+#endif
 
 /**
  A `TextNode` creates a "string" sprite essentially. 
@@ -27,10 +31,10 @@ import UIKit
 open class TextNode: Node, Renderable {
   fileprivate typealias GlyphClosure = (_ glyph: CGGlyph, _ bounds: CGRect) -> ()
 
-  open var text: String
+  public var text: String
   let fontAtlas: FontAtlas
-  open var color: Color
-  open var alpha: Float {
+  public var color: Color
+  public var alpha: Float {
     get { return color.alpha }
     set {
       color = Color(color.red, color.green, color.blue, newValue)
@@ -39,10 +43,10 @@ open class TextNode: Node, Renderable {
 
   fileprivate(set) var quad: Quad
 
-  open var texture: Texture?
+  public var texture: Texture?
 
-  open var hidden = false
-  open let isVisible = true
+  public var hidden = false
+  public let isVisible = true
 
   /**
    Create a new text label node with a given font.
@@ -55,7 +59,7 @@ open class TextNode: Node, Renderable {
 
    - returns: A new instance of `TextNode`.
    */
-  public init(text: String, font: UIFont, color: Color) {
+  public init(text: String, font: Font, color: Color) {
     self.text = text
     self.fontAtlas = Fonts.cache.fontForUIFont(font)!
     self.color = color
@@ -142,32 +146,33 @@ open class TextNode: Node, Renderable {
     defer { originBuffer.deinitialize(count: lines.count); originBuffer.deallocate(capacity: lines.count) }
     CTFrameGetLineOrigins(frame, entire, originBuffer)
 
-    UIGraphicsBeginImageContext(CGSize(width: 1.0, height: 1.0))
-    var context = UIGraphicsGetCurrentContext()
-    
-    for (i, line) in lines.enumerated() {
-      let lineOrigin = originBuffer[i]
-
-      let runs = CTLineGetGlyphRuns(line) as [AnyObject] as! [CTRun] //lol
-      runs.forEach { run in
-        let glyphCount = CTRunGetGlyphCount(run)
-
-        let glyphBuffer = UnsafeMutablePointer<CGGlyph>.allocate(capacity: glyphCount)
-        defer { glyphBuffer.deinitialize(count: glyphCount); glyphBuffer.deallocate(capacity: glyphCount) }
-        CTRunGetGlyphs(run, entire, glyphBuffer)
-
-        //TODO: probably don't need this anymore
-        let positionBuffer = UnsafeMutablePointer<CGPoint>.allocate(capacity: glyphCount)
-        defer { positionBuffer.deinitialize(); positionBuffer.deallocate(capacity: glyphCount) }
-        CTRunGetPositions(run, entire, positionBuffer)
-
-        (0..<glyphCount).forEach { j in
-          let glyph = glyphBuffer[j]
-          let glyphRect = CTRunGetImageBounds(run, context, CFRangeMake(j, 1))
-          closure(glyph, glyphRect)
-        }
-      }
-    }
-    UIGraphicsEndImageContext()
+    //tmp
+//    UIGraphicsBeginImageContext(CGSize(width: 1.0, height: 1.0))
+//    var context = UIGraphicsGetCurrentContext()
+//    
+//    for (i, line) in lines.enumerated() {
+//      let lineOrigin = originBuffer[i]
+//
+//      let runs = CTLineGetGlyphRuns(line) as [AnyObject] as! [CTRun] //lol
+//      runs.forEach { run in
+//        let glyphCount = CTRunGetGlyphCount(run)
+//
+//        let glyphBuffer = UnsafeMutablePointer<CGGlyph>.allocate(capacity: glyphCount)
+//        defer { glyphBuffer.deinitialize(count: glyphCount); glyphBuffer.deallocate(capacity: glyphCount) }
+//        CTRunGetGlyphs(run, entire, glyphBuffer)
+//
+//        //TODO: probably don't need this anymore
+//        let positionBuffer = UnsafeMutablePointer<CGPoint>.allocate(capacity: glyphCount)
+//        defer { positionBuffer.deinitialize(); positionBuffer.deallocate(capacity: glyphCount) }
+//        CTRunGetPositions(run, entire, positionBuffer)
+//
+//        (0..<glyphCount).forEach { j in
+//          let glyph = glyphBuffer[j]
+//          let glyphRect = CTRunGetImageBounds(run, context, CFRangeMake(j, 1))
+//          closure(glyph, glyphRect)
+//        }
+//      }
+//    }
+//    UIGraphicsEndImageContext()
   }
 }

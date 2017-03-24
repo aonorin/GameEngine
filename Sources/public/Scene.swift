@@ -9,7 +9,11 @@
 import Foundation
 import Metal
 import simd
+#if os(iOS)
 import UIKit
+#else
+import Cocoa
+#endif
 
 /**
  A `Scene` is a node object that holds everything on screen as the root of the node tree. Anything that needs to be displayed must be added to 
@@ -29,10 +33,9 @@ open class Scene {
     }
   }
 
-  open fileprivate(set) var camera: CameraNode
-  let tileSize: Int
+  public fileprivate(set) var camera: CameraNode
 
-  open var allNodes: Nodes {
+  public var allNodes: Nodes {
     return graphCache.allNodes
   }
 
@@ -48,9 +51,7 @@ open class Scene {
 
    - returns: A new instance of `Scene`.
    */
-  public init(size: Size, tileSize: Int) {
-    self.tileSize = tileSize
-
+  public init(size: Size) {
     camera = CameraNode(size: size)
 
     camera.scene = self
@@ -68,7 +69,7 @@ open class Scene {
 
    - parameter delta: The amount of time that has passed since the last update.
    */
-  open func update(_ delta: CFTimeInterval) {}
+  open func update(_ delta: Double) {}
 }
 
 // MARK: Scene graph

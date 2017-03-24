@@ -7,7 +7,14 @@
 //
 
 import Metal
-import UIKit
+//tmp typealias stuff I think
+#if os(iOS)
+  import UIKit
+  public typealias VC = UIViewController
+#else
+  import Cocoa
+  public typealias VC = NSViewController
+#endif
 
 /**
  The `GameViewController` is a controller for stuff. It probably won't do much but it's required for iOS. Pretty much just 
@@ -23,17 +30,10 @@ import UIKit
  view.presentScene(scene)
  ````
  */
-public class GameViewController: UIViewController {
+public class GameViewController: VC {
   public var scene: Scene!
 
   override public func loadView() {
-    view = GameView(frame: UIScreen.main.bounds)
-  }
-
-  override public func viewDidLoad() {
-    super.viewDidLoad()
-    
-    let view = self.view as! GameView
-    view.clearColor = Color(0.0, 0.5, 0.0)
+    view = GameView(frame: Screen.main.nativeBounds)
   }
 }
